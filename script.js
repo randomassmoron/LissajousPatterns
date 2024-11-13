@@ -24,9 +24,11 @@ const phi1Value = document.getElementById("phi1Value");
 const phi2Value = document.getElementById("phi2Value");
 const startStopButton = document.getElementById("startStopButton");
 const resetButton = document.getElementById("resetButton");
+const previewToggleButton = document.getElementById("previewToggleButton"); // New button for preview toggle
 
 // Track whether the animation is running or not
 let isRunning = false;
+let isPreviewEnabled = true;  // Flag to toggle the preview
 
 // Arrays to store the track points
 let track = []; // Track for the path of the dot
@@ -34,12 +36,35 @@ let track = []; // Track for the path of the dot
 // Function to draw the initial dot centered on the canvas
 function drawInitialDot() {
     ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
-    const x = A * Math.sin(phi1);
+    const x = A * Math.sin(phi1 + Math.PI);  // Offset by π
     const y = B * Math.sin(phi2);
+    
+    // Draw the initial dot
     ctx.beginPath();
-    ctx.arc(x + canvas.width / 2, y + canvas.height / 2, 5, 0, 2 * Math.PI);  // Dot position
+    ctx.arc(x + canvas.width / 2, y + canvas.height / 2, 5, 0, 2 * Math.PI);  
     ctx.fillStyle = "white";
     ctx.fill();
+}
+
+// Function to draw the preview line for the Lissajous curve
+function drawPreview() {
+    ctx.lineWidth = 0.5;  // Make the preview line thinner
+    ctx.strokeStyle = 'white';
+    ctx.beginPath();
+    
+    // Loop through a small range of time to draw the preview path
+    for (let time = 0; time < Math.PI * 2; time += 0.1) {
+        const x = A * Math.sin(a * time + phi1 + Math.PI); // Offset by π
+        const y = B * Math.sin(b * time + phi2);
+
+        if (time === 0) {
+            ctx.moveTo(x + canvas.width / 2, y + canvas.height / 2);
+        } else {
+            ctx.lineTo(x + canvas.width / 2, y + canvas.height / 2);
+        }
+    }
+    
+    ctx.stroke();
 }
 
 // Function to draw the Lissajous curve and its track
@@ -47,6 +72,7 @@ function drawLissajous() {
     ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
 
     // Draw path based on previous points in track array
+    ctx.lineWidth = 1;  // Set the track line thickness to normal
     ctx.strokeStyle = 'white';
     ctx.beginPath();
     track.forEach((point, index) => {
@@ -58,7 +84,7 @@ function drawLissajous() {
     });
     ctx.stroke();
 
-    // Calculate the current dot position based on time, with x offset by π
+    // Calculate the current dot position based on time
     const x = A * Math.sin(a * t + phi1 + Math.PI);  // Offset by π
     const y = B * Math.sin(b * t + phi2);
 
@@ -80,7 +106,6 @@ function drawLissajous() {
     }
 }
 
-
 // Update parameters and synchronize sliders and inputs
 function updateParams() {
     // Update amplitude, frequency, and phase shift values
@@ -97,6 +122,11 @@ function updateParams() {
 
     // Update the initial dot to reflect parameter changes
     drawInitialDot();
+
+    // If preview mode is enabled, redraw the preview line with the updated parameters
+    if (isPreviewEnabled) {
+        drawPreview();
+    }
 }
 
 // Synchronize sliders with number inputs for phase shifts
@@ -126,6 +156,19 @@ phi2Value.addEventListener("input", () => {
     input.addEventListener("input", updateParams);
 });
 
+// Toggle preview on/off
+function togglePreview() {
+    isPreviewEnabled = !isPreviewEnabled;
+    if (isPreviewEnabled) {
+        previewToggleButton.textContent = "Disable Preview";
+        track = []; // Reset the track when enabling preview
+        drawPreview(); // Draw the preview immediately
+    } else {
+        previewToggleButton.textContent = "Enable Preview";
+        drawInitialDot(); // Just draw the initial dot when preview is disabled
+    }
+}
+
 // Toggle animation on/off
 function toggleAnimation() {
     isRunning = !isRunning;
@@ -146,9 +189,10 @@ function resetAnimation() {
     drawInitialDot(); // Reset the dot to initial position
 }
 
-// Event listeners for Start/Stop and Reset buttons
+// Event listeners for Start/Stop, Reset, and Preview buttons
 startStopButton.addEventListener("click", toggleAnimation);
 resetButton.addEventListener("click", resetAnimation);
+previewToggleButton.addEventListener("click", togglePreview);
 
 // Initialize parameters and draw the initial dot
 updateParams();
